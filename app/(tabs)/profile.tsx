@@ -1,0 +1,407 @@
+
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, ScrollView, Platform, Pressable, Alert } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { IconSymbol } from "@/components/IconSymbol";
+import { colors } from "@/styles/commonStyles";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { logout, getLineUserInfo } from "@/services/lineAuth";
+import { getSelectedCompany } from "@/services/companyService";
+import { router } from "expo-router";
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  position: string;
+  department: string;
+  employeeId: string;
+  location: string;
+}
+
+export interface LeaveRequest {
+  id: string;
+  userId: string;
+  leaveType: string;
+  fromDate: string;
+  toDate: string;
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+  daysRequested: number;
+}
+
+export interface LeaveQuota {
+  userId: string;
+  totalAnnual: number;
+  used: number;
+  remaining: number;
+  byType: {
+    [key: string]: {
+      total: number;
+      used: number;
+      remaining: number;
+    };
+  };
+}
+
+const mockUsers: User[] = [
+  {
+    id: '1',
+    name: 'John Doe',
+    email: 'john.doe@example.com',
+    phone: '+1 (555) 123-4567',
+    position: 'Software Engineer',
+    department: 'Engineering',
+    employeeId: 'EMP-2024-001',
+    location: 'San Francisco, CA',
+  },
+  {
+    id: '2',
+    name: 'Jane Smith',
+    email: 'jane.smith@example.com',
+    phone: '+1 (555) 234-5678',
+    position: 'Product Manager',
+    department: 'Product',
+    employeeId: 'EMP-2024-002',
+    location: 'New York, NY',
+  },
+  {
+    id: '3',
+    name: 'Mike Johnson',
+    email: 'mike.johnson@example.com',
+    phone: '+1 (555) 345-6789',
+    position: 'Designer',
+    department: 'Design',
+    employeeId: 'EMP-2024-003',
+    location: 'Los Angeles, CA',
+  },
+];
+
+export default function ProfileScreen() {
+  const [currentUser, setCurrentUser] = useState<User>(mockUsers[0]);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [currentCompany, setCurrentCompany] = useState<string>('');
+
+  useEffect(() => {
+    loadCurrentUser();
+    loadCurrentCompany();
+  }, []);
+
+  const loadCurrentUser = async () => {
+    try {
+      // Load actual user info from LINE login
+      const lineUserInfo = await getLineUserInfo();
+      
+      if (lineUserInfo && lineUserInfo.userInfo && lineUserInfo.userInfo.employeeInfo) {
+        const empInfo = lineUserInfo.userInfo.employeeInfo;
+        const profile = lineUserInfo.profile;
+        
+        // Map employee info to User interface
+        const user: User = {
+          id: lineUserInfo.lineId,
+          name: empInfo.name || profile?.displayName || 'Unknown',
+          email: empInfo.email || '',
+          phone: empInfo.phoneNumber || '',
+          position: empInfo.position || '',
+          department: empInfo.department || '',
+          employeeId: empInfo.employeeNumber || '',
+          location: empInfo.workLocation || '',
+        };
+        
+        setCurrentUser(user);
+        console.log('Loaded employee info:', user);
+      } else {
+        // Fallback to mock data if no employee info
+        console.log('No employee info found, using mock data');
+      }
+    } catch (error) {
+      console.log('Error loading current user:', error);
+    }
+  };
+
+  const loadCurrentCompany = async () => {
+    try {
+      const company = await getSelectedCompany();
+      if (company) {
+        setCurrentCompany(company.company);
+        console.log('Current company:', company.company);
+      }
+    } catch (error) {
+      console.log('Error loading current company:', error);
+    }
+  };
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'ออกจากระบบ',
+      'คุณแน่ใจหรือว่าต้องการออกจากระบบ?',
+      [
+        {
+          text: 'ยกเลิก',
+          onPress: () => console.log('Logout cancelled'),
+          style: 'cancel',
+        },
+        {
+          text: 'ออกจากระบบ',
+          onPress: async () => {
+            try {
+              setIsLoggingOut(true);
+              await logout();
+              console.log('User logged out successfully');
+              router.replace('/login');
+            } catch (error) {
+              console.log('Error during logout:', error);
+              Alert.alert('ข้อผิดพลาด', 'ไม่สามารถออกจากระบบได้');
+            } finally {
+              setIsLoggingOut(false);
+            }
+          },
+          style: 'destructive',
+        },
+      ]
+    );
+  };
+
+  return (
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={['top']}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={[
+          styles.contentContainer,
+          Platform.OS !== 'ios' && styles.contentContainerWithTabBar
+        ]}
+      >
+        <View style={[styles.profileHeader, { backgroundColor: colors.card }]}>
+          <IconSymbol name="person.circle.fill" size={80} color={colors.primary} />
+          <Text style={[styles.name, { color: colors.text }]}>{currentUser.name}</Text>
+          <Text style={[styles.email, { color: colors.textSecondary }]}>{currentUser.email}</Text>
+        </View>
+
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>ข้อมูลติดต่อ</Text>
+          <View style={styles.infoRow}>
+            <IconSymbol name="phone.fill" size={20} color={colors.primary} />
+            <Text style={[styles.infoText, { color: colors.text }]}>{currentUser.phone}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <IconSymbol name="envelope.fill" size={20} color={colors.primary} />
+            <Text style={[styles.infoText, { color: colors.text }]}>{currentUser.email}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <IconSymbol name="location.fill" size={20} color={colors.primary} />
+            <Text style={[styles.infoText, { color: colors.text }]}>{currentUser.location}</Text>
+          </View>
+        </View>
+
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>รายละเอียดการจ้างงาน</Text>
+          {currentCompany && (
+            <View style={styles.infoRow}>
+              <IconSymbol name="building.2.fill" size={20} color={colors.primary} />
+              <View style={styles.infoColumn}>
+                <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>บริษัท</Text>
+                <Text style={[styles.infoText, { color: colors.text, fontWeight: '600' }]}>{currentCompany}</Text>
+              </View>
+            </View>
+          )}
+          <View style={styles.infoRow}>
+            <IconSymbol name="briefcase.fill" size={20} color={colors.primary} />
+            <View style={styles.infoColumn}>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>ตำแหน่ง</Text>
+              <Text style={[styles.infoText, { color: colors.text }]}>{currentUser.position}</Text>
+            </View>
+          </View>
+          <View style={styles.infoRow}>
+            <IconSymbol name="building.fill" size={20} color={colors.primary} />
+            <View style={styles.infoColumn}>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>แผนก</Text>
+              <Text style={[styles.infoText, { color: colors.text }]}>{currentUser.department}</Text>
+            </View>
+          </View>
+          <View style={styles.infoRow}>
+            <IconSymbol name="calendar.fill" size={20} color={colors.primary} />
+            <View style={styles.infoColumn}>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>รหัสพนักงาน</Text>
+              <Text style={[styles.infoText, { color: colors.text }]}>{currentUser.employeeId}</Text>
+            </View>
+          </View>
+        </View>
+
+        <Pressable
+          style={[
+            styles.logoutButton,
+            { backgroundColor: colors.danger },
+            isLoggingOut && styles.buttonDisabled
+          ]}
+          onPress={handleLogout}
+          disabled={isLoggingOut}
+        >
+          <IconSymbol 
+            name="arrow.right.circle.fill"
+            size={20}
+            color="#FFFFFF"
+          />
+          <Text style={styles.logoutButtonText}>ออกจากระบบ</Text>
+        </Pressable>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
+  container: {
+    flex: 1,
+  },
+  contentContainer: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  contentContainerWithTabBar: {
+    paddingBottom: 120,
+  },
+  profileHeader: {
+    alignItems: 'center',
+    borderRadius: 12,
+    padding: 32,
+    marginBottom: 16,
+    gap: 12,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+    elevation: 3,
+  },
+  name: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  email: {
+    fontSize: 16,
+  },
+  section: {
+    borderRadius: 12,
+    padding: 20,
+    gap: 16,
+    marginBottom: 16,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+    elevation: 3,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 8,
+  },
+  infoColumn: {
+    flex: 1,
+  },
+  infoLabel: {
+    fontSize: 12,
+    marginBottom: 2,
+  },
+  infoText: {
+    fontSize: 16,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+    marginTop: 8,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+    elevation: 3,
+  },
+  logoutButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+});
+
+export { mockUsers };
+
+
+// Mock data for leave requests and quotas
+export const mockLeaveRequests: LeaveRequest[] = [
+  {
+    id: '1',
+    userId: '1',
+    leaveType: 'ลาพักร้อน',
+    fromDate: '2024-01-15',
+    toDate: '2024-01-19',
+    reason: 'ลาพักร้อนกับครอบครัว',
+    status: 'approved',
+    createdAt: '2024-01-10',
+    daysRequested: 5,
+  },
+  {
+    id: '2',
+    userId: '1',
+    leaveType: 'ลาป่วย',
+    fromDate: '2024-01-22',
+    toDate: '2024-01-22',
+    reason: 'นัดหมายแพทย์',
+    status: 'pending',
+    createdAt: '2024-01-20',
+    daysRequested: 1,
+  },
+  {
+    id: '3',
+    userId: '1',
+    leaveType: 'ลาส่วนตัว',
+    fromDate: '2024-01-25',
+    toDate: '2024-01-25',
+    reason: 'เรื่องส่วนตัว',
+    status: 'rejected',
+    createdAt: '2024-01-23',
+    daysRequested: 1,
+  },
+];
+
+export const mockLeaveQuotas: LeaveQuota[] = [
+  {
+    userId: '1',
+    totalAnnual: 20,
+    used: 7,
+    remaining: 13,
+    byType: {
+      'ลาพักร้อน': { total: 15, used: 5, remaining: 10 },
+      'ลาป่วย': { total: 3, used: 1, remaining: 2 },
+      'ลาส่วนตัว': { total: 2, used: 1, remaining: 1 },
+    },
+  },
+  {
+    userId: '2',
+    totalAnnual: 20,
+    used: 10,
+    remaining: 10,
+    byType: {
+      'ลาพักร้อน': { total: 15, used: 10, remaining: 5 },
+      'ลาป่วย': { total: 3, used: 0, remaining: 3 },
+      'ลาส่วนตัว': { total: 2, used: 0, remaining: 2 },
+    },
+  },
+  {
+    userId: '3',
+    totalAnnual: 20,
+    used: 2,
+    remaining: 18,
+    byType: {
+      'ลาพักร้อน': { total: 15, used: 0, remaining: 15 },
+      'ลาป่วย': { total: 3, used: 2, remaining: 1 },
+      'ลาส่วนตัว': { total: 2, used: 0, remaining: 2 },
+    },
+  },
+];
