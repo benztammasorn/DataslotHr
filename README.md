@@ -194,6 +194,28 @@ hr-app/
 - **Redirect URI**: `natively://line-callback`
 - **Workflow**: `EMPLOYEE`
 
+### การตั้งค่าใน LINE Developers Console
+
+สำหรับให้แอปทำงานได้ใน TestFlight และ Production:
+
+1. ไปที่ [LINE Developers Console](https://developers.line.biz/)
+2. เลือก Channel ของคุณ (Channel ID: 2008377867)
+3. ไปที่แท็บ **LINE Login**
+4. ในส่วน **App settings**:
+   - **iOS URL scheme**: ใส่ `natively`
+   - **Android URL scheme**: ใส่ `natively`
+   - **iOS Bundle ID**: `com.dataslot.hr`
+   - **Android Package Name**: `com.dataslot.hr`
+5. ในส่วน **Callback URL** (สำคัญ!):
+   - เพิ่ม `natively://line-callback` (สำหรับ Mobile App)
+   - เพิ่ม `https://hr.dataslot.app/line-callback` (ถ้าต้องการใช้ Web)
+
+**หมายเหตุ**: 
+- ต้องเพิ่ม `natively://line-callback` ในส่วน **Callback URL** ด้วย
+- สามารถมีหลาย Callback URL ได้ (ทั้ง custom scheme และ https)
+- URL Scheme ในส่วน App settings ใส่แค่ `natively` (ไม่ใส่ `://`)
+- Callback URL ต้องใส่ URL เต็ม เช่น `natively://line-callback`
+
 ### การทำงานของระบบ Multi-Company
 
 1. ผู้ใช้กด "Sign in with Line"
@@ -332,6 +354,35 @@ npx expo start --clear
 1. ทดสอบบนมือถือจริง (ไม่ใช่ web browser)
 2. ตรวจสอบว่าติดตั้ง LINE app แล้ว
 3. ดู console logs เพื่อหาข้อผิดพลาด
+
+### ปัญหา: "Invalid redirect custom scheme" หรือ "Indirect URL" error
+
+**สาเหตุ**: LINE Developers Console ไม่ได้ตั้งค่า Callback URL ที่ถูกต้อง
+
+**แก้ไข** (ต้องตั้งค่า 2 ส่วน):
+
+**ส่วนที่ 1 - App settings**:
+1. ไปที่ [LINE Developers Console](https://developers.line.biz/)
+2. เลือก Channel ของคุณ → แท็บ **LINE Login** → **App settings**
+3. ตั้งค่า:
+   - **iOS URL scheme**: `natively` (ใส่แค่คำว่า natively)
+   - **Android URL scheme**: `natively`
+   - **iOS Bundle ID**: `com.dataslot.hr`
+   - **Android Package Name**: `com.dataslot.hr`
+
+**ส่วนที่ 2 - Callback URL** (สำคัญมาก!):
+1. ในหน้าเดียวกัน เลื่อนขึ้นไปหาส่วน **Callback URL**
+2. กด **Add** หรือ **Edit**
+3. เพิ่ม: `natively://line-callback` (ใส่ URL เต็ม)
+4. กด **Update**
+5. รอ 5-10 นาที
+6. ทดสอบใหม่บน TestFlight
+
+**หมายเหตุ**: 
+- ต้องตั้งค่า **ทั้ง 2 ส่วน** (App settings และ Callback URL)
+- App settings ใส่แค่ `natively` (ไม่มี `://`)
+- Callback URL ใส่ `natively://line-callback` (URL เต็ม)
+- ดูรายละเอียดเพิ่มเติมใน `QUICK_FIX.md`
 
 ### ปัญหา: "ไม่พบบริษัทในระบบ"
 

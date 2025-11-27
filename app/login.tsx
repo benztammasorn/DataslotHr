@@ -4,7 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { View, Text, StyleSheet, Pressable, Alert, ActivityIndicator, ScrollView, Platform } from 'react-native';
 import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
-import { handleLineLogin, checkUserAuthorization, storeLineUserInfo, getLineUserInfo } from '@/services/lineAuth';
+// Use native LINE SDK for better integration
+import { handleLineLogin, checkUserAuthorization, storeLineUserInfo, getLineUserInfo } from '@/services/lineAuthNative';
+// Fallback to web-based if native SDK is not available:
+// import { handleLineLogin, checkUserAuthorization, storeLineUserInfo, getLineUserInfo } from '@/services/lineAuth';
 import { fetchUserCompanies, getUniqueCompanies, storeSelectedCompany } from '@/services/companyService';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -81,10 +84,17 @@ export default function LoginScreen() {
           // Navigate to home screen
           router.replace('/(tabs)/(home)');
         } else {
-          setError('ไม่มีสิทธิ์เข้าถึงบริษัทนี้ กรุณาติดต่อผู้ดูแลระบบ');
+          // Use specific error message if available
+          const errorMsg = authResult.errorMessage || 'ไม่มีสิทธิ์เข้าถึงบริษัทนี้';
+          const errorCode = authResult.error || 'UNAUTHORIZED';
+          
+          console.error('Authorization failed:', errorCode);
+          console.error('Error:', errorMsg);
+          
+          setError(errorMsg);
           Alert.alert(
             'ไม่มีสิทธิ์เข้าถึง',
-            `คุณไม่มีสิทธิ์เข้าถึงบริษัท ${selectedCompany.company} กรุณาติดต่อผู้ดูแลระบบ`,
+            `${errorMsg}\n\nบริษัท: ${selectedCompany.company}\nรหัสข้อผิดพลาด: ${errorCode}\n\nกรุณาติดต่อผู้ดูแลระบบ`,
             [{ text: 'ตกลง', onPress: () => setError(null) }]
           );
         }
@@ -125,15 +135,31 @@ export default function LoginScreen() {
         console.log('Login successful, User ID:', result.userId);
         await performAuthorization(result.userId, result.profile);
       } else {
-        const errorMsg = result.error || 'เข้าสู่ระบบไม่สำเร็จ';
+        // Use errorMessage if available, otherwise fall back to error code
+        const errorMsg = result.errorMessage || result.error || 'เข้าสู่ระบบไม่สำเร็จ';
+        const errorCode = result.error || 'UNKNOWN_ERROR';
+        
+        console.error('Login failed:', errorCode);
+        console.error('Error message:', errorMsg);
+        
         setError(errorMsg);
-        Alert.alert('เข้าสู่ระบบไม่สำเร็จ', errorMsg);
+        
+        // Show alert with detailed error
+        Alert.alert(
+          'เข้าสู่ระบบไม่สำเร็จ', 
+          `${errorMsg}\n\nรหัสข้อผิดพลาด: ${errorCode}`,
+          [{ text: 'ตกลง', onPress: () => setError(null) }]
+        );
       }
     } catch (err) {
       const errorMessage = String(err);
       setError(errorMessage);
-      console.log('Login error:', err);
-      Alert.alert('เกิดข้อผิดพลาด', errorMessage);
+      console.error('Login exception:', err);
+      Alert.alert(
+        'เกิดข้อผิดพลาด', 
+        `${errorMessage}\n\nกรุณาลองใหม่อีกครั้ง`,
+        [{ text: 'ตกลง', onPress: () => setError(null) }]
+      );
     } finally {
       setIsLoading(false);
     }

@@ -16,11 +16,21 @@ const LINE_PROFILE_ENDPOINT = 'https://api.line.me/v2/profile';
 
 // Generate redirect URI using expo-auth-session
 const getRedirectUri = () => {
+  // For production iOS/Android builds, use a fixed redirect URI
+  // For development, use makeRedirectUri
+  if (Platform.OS === 'ios' || Platform.OS === 'android') {
+    // Use fixed redirect URI for production builds
+    const redirectUri = 'natively://line-callback';
+    console.log('Redirect URI (fixed):', redirectUri);
+    return redirectUri;
+  }
+  
+  // For development/web
   const redirectUri = makeRedirectUri({
     scheme: 'natively',
     path: 'line-callback',
   });
-  console.log('Redirect URI:', redirectUri);
+  console.log('Redirect URI (dynamic):', redirectUri);
   return redirectUri;
 };
 
@@ -82,26 +92,54 @@ export const handleLineLogin = async () => {
               profile: profileResult.profile
             };
           } else {
-            return { success: false, error: 'Failed to get user profile' };
+            return { 
+              success: false, 
+              error: 'LINE_NO_PROFILE',
+              errorMessage: 'ไม่สามารถดึงข้อมูลโปรไฟล์จาก LINE'
+            };
           }
         } else {
-          return { success: false, error: tokenResult.error || 'Failed to exchange code for token' };
+          return { 
+            success: false, 
+            error: 'LINE_TOKEN_EXCHANGE_FAILED',
+            errorMessage: tokenResult.error || 'ไม่สามารถแลก Access Token ได้'
+          };
         }
       } else {
-        return { success: false, error: 'No authorization code received' };
+        return { 
+          success: false, 
+          error: 'LINE_NO_CODE',
+          errorMessage: 'ไม่ได้รับรหัสยืนยันจาก LINE'
+        };
       }
     } else if (result.type === 'cancel') {
       console.log('User cancelled Line login');
-      return { success: false, error: 'User cancelled login' };
+      return { 
+        success: false, 
+        error: 'USER_CANCELLED',
+        errorMessage: 'ผู้ใช้ยกเลิกการเข้าสู่ระบบ'
+      };
     } else if (result.type === 'dismiss') {
       console.log('User dismissed Line login');
-      return { success: false, error: 'User dismissed login' };
+      return { 
+        success: false, 
+        error: 'USER_DISMISSED',
+        errorMessage: 'ผู้ใช้ปิดหน้าต่างการเข้าสู่ระบบ'
+      };
     }
     
-    return { success: false, error: 'Unknown error' };
+    return { 
+      success: false, 
+      error: 'UNKNOWN_ERROR',
+      errorMessage: 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ'
+    };
   } catch (error) {
-    console.log('Error during Line login:', error);
-    return { success: false, error: String(error) };
+    console.error('Error during Line login:', error);
+    return { 
+      success: false, 
+      error: 'LINE_LOGIN_EXCEPTION',
+      errorMessage: `เข้าสู่ระบบไม่สำเร็จ: ${String(error)}`
+    };
   }
 };
 
@@ -266,12 +304,38 @@ export const checkUserAuthorization = async (lineId: string, companyName: string
         }
       };
     } else {
-      console.log('User not authorized - no records found');
-      return { authorized: false, data: null };
+      console.error('=== USER NOT FOUND IN COMPANY ===');
+      console.error('LINE ID:', lineId);
+      console.error('Company:', companyName);
+      console.error('Response:', data);
+      
+      return { 
+        authorized: false, 
+        data: null,
+        error: 'USER_NOT_FOUND',
+        errorMessage: `ไม่พบข้อมูลพนักงานในระบบบริษัท ${companyName}\nLINE ID: ${lineId.substring(0, 10)}...`
+      };
     }
   } catch (error) {
-    console.log('Error checking authorization:', error);
-    return { authorized: false, data: null, error: String(error) };
+    console.error('=== Authorization Check Error ===');
+    console.error('Error:', error);
+    
+    // Check for network errors
+    if (String(error).includes('network') || String(error).includes('Network') || String(error).includes('Failed to fetch')) {
+      return { 
+        authorized: false, 
+        data: null, 
+        error: 'NETWORK_ERROR',
+        errorMessage: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ กรุณาตรวจสอบอินเทอร์เน็ต'
+      };
+    }
+    
+    return { 
+      authorized: false, 
+      data: null, 
+      error: 'AUTHORIZATION_CHECK_FAILED',
+      errorMessage: `เกิดข้อผิดพลาดในการตรวจสอบสิทธิ์: ${String(error)}`
+    };
   }
 };
 

@@ -1,0 +1,93 @@
+═══════════════════════════════════════════════════════════════════
+  LINE DEVELOPERS CONSOLE - CONFIGURATION SUMMARY
+═══════════════════════════════════════════════════════════════════
+
+ERROR: "Invalid redirect custom scheme"
+
+CAUSE: The callback URL is not registered in LINE Developers Console
+
+═══════════════════════════════════════════════════════════════════
+  SOLUTION: Configure BOTH sections
+═══════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────┐
+│  SECTION 1: App settings                                         │
+│  (Scroll down to find this section)                              │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  iOS URL scheme:        natively                                 │
+│  Android URL scheme:    natively                                 │
+│  iOS Bundle ID:         com.dataslot.hr                          │
+│  Android Package name:  com.dataslot.hr                          │
+│                                                                  │
+│  ⚠️  Enter ONLY the scheme name (no :// or path)                │
+└─────────────────────────────────────────────────────────────────┘
+
+                              +
+                              
+┌─────────────────────────────────────────────────────────────────┐
+│  SECTION 2: Callback URL                                         │
+│  (Near the top of the page)                                      │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Click [+ Add] or [Edit] and add:                               │
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │  natively://line-callback                                   │ │
+│  └────────────────────────────────────────────────────────────┘ │
+│                                                                  │
+│  ⚠️  Enter the FULL callback URL (with :// and path)            │
+└─────────────────────────────────────────────────────────────────┘
+
+                              ↓
+                              
+┌─────────────────────────────────────────────────────────────────┐
+│  Click [Update] button at the bottom                             │
+└─────────────────────────────────────────────────────────────────┘
+
+                              ↓
+                              
+┌─────────────────────────────────────────────────────────────────┐
+│  Wait 5-10 minutes for changes to take effect                    │
+└─────────────────────────────────────────────────────────────────┘
+
+                              ↓
+                              
+┌─────────────────────────────────────────────────────────────────┐
+│  Test on TestFlight ✓                                            │
+└─────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════
+  IMPORTANT NOTES
+═══════════════════════════════════════════════════════════════════
+
+✓ You need to configure BOTH sections
+✓ App settings uses just the scheme: "natively"
+✓ Callback URL uses the full URL: "natively://line-callback"
+✓ You can have multiple callback URLs (add web URLs too if needed)
+✓ Wait 5-10 minutes after saving before testing
+
+═══════════════════════════════════════════════════════════════════
+  QUICK REFERENCE
+═══════════════════════════════════════════════════════════════════
+
+WHERE:  LINE Developers Console → Your Channel → LINE Login
+
+WHAT TO ADD:
+
+  1. App settings section:
+     • iOS URL scheme: natively
+     • Android URL scheme: natively
+     • iOS Bundle ID: com.dataslot.hr
+     • Android Package: com.dataslot.hr
+
+  2. Callback URL section:
+     • natively://line-callback
+
+═══════════════════════════════════════════════════════════════════
+
+URL: https://developers.line.biz/console/
+Channel ID: 2008377867
+
+═══════════════════════════════════════════════════════════════════
+

@@ -14,10 +14,13 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.Natively",
+      "bundleIdentifier": "com.dataslot.hr",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "associatedDomains": [
+        "applinks:hr.dataslot.app"
+      ]
     },
     "android": {
       "adaptiveIcon": {
@@ -34,14 +37,25 @@
     "plugins": [
       "expo-font",
       "expo-router",
-      "expo-web-browser"
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
+      "@xmartlabs/react-native-line"
     ],
     "scheme": "natively",
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
-      "router": {}
+      "router": {},
+      "eas": {
+        "projectId": "3291f71f-80d4-4701-9421-cb21e371cb75"
+      }
     },
     "deepLinks": [
       "natively://line-callback"

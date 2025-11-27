@@ -54,7 +54,9 @@ export default function CompanySelectionScreen() {
       const { lineId, profile } = JSON.parse(tempLineProfileJson);
       
       // Import necessary functions
-      const { checkUserAuthorization, storeLineUserInfo } = await import('@/services/lineAuth');
+      // Use native LINE SDK
+      const { checkUserAuthorization, storeLineUserInfo } = await import('@/services/lineAuthNative');
+      // Fallback: await import('@/services/lineAuth');
       
       // Check authorization for selected company
       console.log('Checking authorization for company:', company.company);

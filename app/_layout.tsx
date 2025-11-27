@@ -18,6 +18,7 @@ import { StatusBar } from "expo-status-bar";
 import { Button } from "@/components/button";
 import { WidgetProvider } from "@/contexts/WidgetContext";
 import { getLineUserInfo } from "@/services/lineAuth";
+import { initializeLineSDK } from "@/services/lineAuthNative";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -36,6 +37,15 @@ export default function RootLayout() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
 
   useEffect(() => {
+    // Initialize LINE SDK
+    initializeLineSDK().then((result) => {
+      if (result.success) {
+        console.log('LINE SDK initialized');
+      } else {
+        console.log('Failed to initialize LINE SDK:', result.error);
+      }
+    });
+    
     checkLoginStatus();
   }, []);
 

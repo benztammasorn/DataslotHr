@@ -5,7 +5,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { IconSymbol } from "@/components/IconSymbol";
 import { colors } from "@/styles/commonStyles";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { logout, getLineUserInfo } from "@/services/lineAuth";
+// Use native LINE SDK
+import { logout, getLineUserInfo } from "@/services/lineAuthNative";
+// Fallback to web-based:
+// import { logout, getLineUserInfo } from "@/services/lineAuth";
 import { getSelectedCompany } from "@/services/companyService";
 import { router } from "expo-router";
 
